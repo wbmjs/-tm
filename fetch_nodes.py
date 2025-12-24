@@ -1,4 +1,3 @@
-# fetch_nodes.py
 import requests
 import json
 import random
@@ -6,9 +5,8 @@ import string
 import os
 import sys
 
-# 从环境变量读取配置
-INVITE_CODE = os.getenv("INVITE_CODE")
-DEFAULT_PASSWORD = "AutoPass123!"
+INVITE_CODE = os.getenv("INVITE_CODE", "")
+DEFAULT_PASSWORD = os.getenv("DEFAULT_PASSWORD", "AutoPass123!")
 
 def generate_email():
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=12)) + "@djjd.com"
@@ -22,7 +20,7 @@ def generate_device_id():
         ''.join(random.choices(string.hexdigits.lower(), k=12))
     ])
 
-def main()
+def main():
     email = generate_email()
     device_id = generate_device_id()
     
@@ -32,7 +30,7 @@ def main()
             "https://api.tianmiao.icu/api/register",
             json={
                 "email": email,
-                "invite_code": "",
+                "invite_code": INVITE_CODE,
                 "password": DEFAULT_PASSWORD,
                 "password_word": ""
             },
@@ -48,14 +46,12 @@ def main()
         reg_data = reg_res.json()
         
         if reg_data.get("code") != 1:
-            print(f"❌ 注册失败: {reg_data.get('message')}")
             sys.exit(1)
             
-        token = reg_data["data"]["auth_data"]    # JWT token
-        authtoken = reg_data["data"]["token"]    # auth token
+        token = reg_data["data"]["auth_data"]
+        authtoken = reg_data["data"]["token"]
         
     except Exception as e:
-        print(f"🔥 注册异常: {str(e)}")
         sys.exit(1)
     
     # 2. 绑定邀请码
@@ -74,12 +70,10 @@ def main()
                 },
                 timeout=10
             )
-            if bind_res.status_code == 200:
-                print("✅ 邀请码绑定成功")
-            else:
-                print("⚠️ 邀请码绑定失败（可能已绑定）")
+            bind_res.raise_for_status()
+            bind_data = bind_res.json()
         except Exception as e:
-            print(f"⚠️ 绑定异常: {str(e)}")
+            pass
     
     # 3. 获取节点
     try:
@@ -105,10 +99,8 @@ def main()
         node_data = node_res.json()
         
         if node_data.get("code") != 1:
-            print(f"❌ 节点获取失败: {node_data.get('message')}")
             sys.exit(1)
             
-        # 提取原始URL（不编码！）
         urls = []
         for group in node_data.get("data", []):
             for node in group.get("node", []):
@@ -117,15 +109,12 @@ def main()
                     urls.append(url)
         
         if not urls:
-            print("❌ 未获取到任何节点")
             sys.exit(1)
             
-        # 输出到标准输出（供后续步骤捕获）
+        # 仅输出节点URL，供写入文件，无其他日志
         print("\n".join(urls))
-        print(f"\n✅ 成功获取 {len(urls)} 个节点", file=sys.stderr)
         
     except Exception as e:
-        print(f"🔥 节点获取异常: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
