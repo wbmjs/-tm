@@ -1,11 +1,8 @@
 name: 🔄 自动更新节点订阅
 
 on:
-  # 每天 UTC 00:00 运行（北京时间 08:00）
   schedule:
     - cron: '0 0 * * *'
-  
-  # 允许手动触发
   workflow_dispatch:
 
 jobs:
@@ -19,11 +16,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'  # 缓存 pip 依赖，提升运行速度
+          cache: 'pip'
 
       - name: 📦 安装依赖
         run: |
-          # 无 requirements.txt 时自动安装 requests
           if [ ! -f "requirements.txt" ]; then
             pip install requests>=2.31.0
           else
@@ -33,20 +29,22 @@ jobs:
       - name: 🌐 获取最新节点
         id: fetch
         run: |
-          # 执行正确的 Python 脚本并输出到文件
-          python fetch_nodes.py > nodes.txt
-          # 将文件内容写入环境变量，避免空内容
-          echo "NODE_CONTENT=$(cat nodes.txt | tr -d '\r')" >> $GITHUB_ENV
+          # 直接将脚本输出写入文件，不通过环境变量传递
+          python fetch_nodes.py > nodes.txt 2>&1
+          # 检查文件是否非空
+          if [ -s nodes.txt ]; then
+            echo "FILE_NOT_EMPTY=true" >> $GITHUB_ENV
+          fi
         env:
           INVITE_CODE: ${{ secrets.INVITE_CODE }}
-        continue-on-error: true  # 脚本执行失败不中断流程
+        continue-on-error: true
 
       - name: 📤 更新到 Gist
-        if: env.NODE_CONTENT != ''  # 内容非空才更新
+        if: env.FILE_NOT_EMPTY == 'true'
         uses: exuanbo/actions-deploy-gist@v1.1.0
         with:
           token: ${{ secrets.GIST_TOKEN }}
           gist_id: ${{ secrets.GIST_ID }}
-          file_path: ./nodes.txt  # 本地文件路径
-          gist_file_name: nodes.txt  # Gist 中显示的文件名
+          file_path: ./nodes.txt
+          gist_file_name: nodes.txt
         continue-on-error: false
