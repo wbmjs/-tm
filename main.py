@@ -7,7 +7,7 @@ import os
 import sys
 
 # 从环境变量读取配置
-INVITE_CODE = os.getenv("INVITE_CODE", "")
+INVITE_CODE = os.getenv("INVITE_CODE")
 DEFAULT_PASSWORD = "AutoPass123!"
 
 def generate_email():
