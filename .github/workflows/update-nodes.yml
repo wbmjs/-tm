@@ -1,0 +1,45 @@
+name: 🔄 自动更新节点订阅
+
+on:
+  # 每天 UTC 00:00 运行（北京时间 08:00）
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  update-gist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 📦 安装依赖
+        run: |
+          pip install -r requirements.txt
+
+      - name: 🌐 获取最新节点
+        id: fetch
+        run: |
+          python fetch_nodes.py > nodes.txt
+        env:
+          INVITE_CODE: ${{ secrets.INVITE_CODE }}
+
+      - name: 📤 更新到 Gist
+        uses: exuanbo/actions-gist@v1.1.0
+        with:
+          token: ${{ secrets.GIST_TOKEN }}
+          gist_id: ${{ secrets.GIST_ID }}
+          files: |
+            {
+              "nodes.txt": {
+                "content": "${{ readFile('nodes.txt') }}"
+              }
+            }
+        continue-on-error: false
