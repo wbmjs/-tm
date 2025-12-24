@@ -27,7 +27,7 @@ jobs:
       - name: 🌐 获取最新节点
         id: fetch
         run: |
-          python fetch_nodes.py > nodes.txt
+          python main.py > nodes.txt
         env:
           INVITE_CODE: ${{ secrets.INVITE_CODE }}
 
