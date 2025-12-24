@@ -22,11 +22,9 @@ def generate_device_id():
         ''.join(random.choices(string.hexdigits.lower(), k=12))
     ])
 
-def main():
-    print("🚀 开始自动获取节点...")
+def main()
     email = generate_email()
     device_id = generate_device_id()
-    print(f"📧 使用邮箱: {email}")
     
     # 1. 注册
     try:
@@ -55,7 +53,6 @@ def main():
             
         token = reg_data["data"]["auth_data"]    # JWT token
         authtoken = reg_data["data"]["token"]    # auth token
-        print("✅ 注册成功，已获取认证令牌")
         
     except Exception as e:
         print(f"🔥 注册异常: {str(e)}")
