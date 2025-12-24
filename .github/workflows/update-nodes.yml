@@ -43,7 +43,7 @@ jobs:
 
       - name: 📤 更新到 Gist
         if: env.NODE_CONTENT != ''  # 内容非空时才更新
-        uses: exuanbo/actions-gist@v1.1.0
+        uses: exuanbo/actions-deploy-gist@v1.1.0
         with:
           token: ${{ secrets.GIST_TOKEN }}
           gist_id: ${{ secrets.GIST_ID }}
