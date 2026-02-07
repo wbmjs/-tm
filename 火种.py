@@ -6,6 +6,7 @@ import json
 import base64
 import urllib.parse
 import time
+import os
 from requests.exceptions import RequestException
 from typing import List, Dict, Optional
 
@@ -13,11 +14,10 @@ from typing import List, Dict, Optional
 BASE_URL = "https://server6.huozhong.xyz/api/nodesystem/user"
 AUTH_URL = "https://server9.huozhong.xyz/realms/vpn_application/protocol/openid-connect/token"
 
-# 登录凭证（极度危险！运行后立即改密码！！！）
-USERNAME = "kopop"
-PASSWORD = "Wwww040408"
-CLIENT_ID = "vpn-user"
-CLIENT_SECRET = "i16bYq4sXxlGl3s"
+USERNAME = os.getenv("HUOZHONG_USERNAME")
+PASSWORD = os.getenv("HUOZHONG_PASSWORD")
+CLIENT_ID = os.getenv("HUOZHONG_CLIENT_ID", "vpn-user")
+CLIENT_SECRET = os.getenv("HUOZHONG_CLIENT_SECRET")
 
 # 输出文件
 OUTPUT_FILE = "huozhong_vless_vmess_links.txt"
