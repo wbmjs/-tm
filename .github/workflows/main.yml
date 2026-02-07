@@ -34,7 +34,7 @@ jobs:
         HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
         HUOZHONG_CLIENT_ID:    ${{ secrets.HUOZHONG_CLIENT_ID }}
         HUOZHONG_CLIENT_SECRET: ${{ secrets.HUOZHONG_CLIENT_SECRET }}
-      run: python extract_links.py
+      run: python 火种.py
 
     - name: 自動 commit & push 生成的連結檔案
       uses: stefanzweifel/git-auto-commit-action@v5   # 或 v7 如果你想用最新版
