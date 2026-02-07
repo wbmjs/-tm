@@ -1,51 +1,67 @@
 name: 火種 VPN 連結提取器
 
+# 觸發條件
 on:
   schedule:
-    - cron: '0 */6 * * *'          # 每 6 小時一次，可改
-  workflow_dispatch:               # 手動觸發
+    - cron: '0 */6 * * *'          # 每 6 小時執行一次（UTC 時間，香港 +8 小時）
+  workflow_dispatch:               # 允許手動在 GitHub 介面點擊執行
 
+# 必要權限：允許寫入倉庫內容（commit / push）
 permissions:
-  contents: write                  # 必須！允許寫入倉庫（commit/push）
+  contents: write
 
 jobs:
   extract-links:
     runs-on: ubuntu-latest
-
     steps:
-    - name: 拉取程式碼
-      uses: actions/checkout@v4
-      with:
-        persist-credentials: false   # 重要！避免 GITHUB_TOKEN 限制導致後續 push 失效或無限迴圈
+      # 步驟 1：拉取倉庫程式碼
+      - name: 拉取程式碼
+        uses: actions/checkout@v4
+        # 注意：這裡不要加 persist-credentials: false，否則 push 會失敗
 
-    - name: 設定 Python 環境
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
+      # 步驟 2：設定 Python 環境
+      - name: 設定 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-    - name: 安裝依賴套件
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      # 步驟 3：安裝依賴套件
+      - name: 安裝依賴
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
 
-    - name: 執行提取腳本
-      env:
-        HUOZHONG_USERNAME:     ${{ secrets.HUOZHONG_USERNAME }}
-        HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
-        HUOZHONG_CLIENT_ID:    ${{ secrets.HUOZHONG_CLIENT_ID }}
-        HUOZHONG_CLIENT_SECRET: ${{ secrets.HUOZHONG_CLIENT_SECRET }}
-      run: python 火种.py
+      # 步驟 4：執行你的 Python 腳本
+      - name: 執行連結提取腳本
+        env:
+          HUOZHONG_USERNAME:     ${{ secrets.HUOZHONG_USERNAME }}
+          HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
+          HUOZHONG_CLIENT_ID:    ${{ secrets.HUOZHONG_CLIENT_ID }}
+          HUOZHONG_CLIENT_SECRET: ${{ secrets.HUOZHONG_CLIENT_SECRET }}
+        run: python 火种.py
 
-    - name: 自動 commit & push 生成的連結檔案
-      uses: stefanzweifel/git-auto-commit-action@v5   # 或 v7 如果你想用最新版
-      with:
-        commit_message: "自動更新: 火種 VPN vless/vmess 連結 (${{ github.run_number }})"
-        file_pattern: huozhong_vless_vmess_links.txt   # 只 commit 這個檔案（或用 * 全部）
-        branch: ${{ github.head_ref || github.ref_name }}  # 推回當前分支（schedule 時是 main/master）
-        skip_dirty_check: false                        # 只在有變化時才 commit
-        skip_fetch: true                               # 加速
-        push_options: '--force-with-lease'             # 可選，安全一點的 force push
+      # 步驟 5：自動 commit & push 生成的 txt 檔案
+      - name: 自動 commit & push 連結檔案
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "自動更新：火種 VPN vless/vmess 連結 (Run #${{ github.run_number }})"
+          file_pattern: huozhong_vless_vmess_links.txt
+          branch: main
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          skip_dirty_check: false          # 只在有變更時才 commit
+          skip_fetch: true                 # 加速執行
+          # 如果你真的需要 force push，可以加上下面這行（通常不需要）
+          # push_options: '--force-with-lease'
 
-    - name: 顯示 log 提醒（可選）
-      if: always()
-      run: echo "如果有新連結，已自動 commit 到倉庫。檢查 commit 歷史。"
+      # 步驟 6：顯示完成訊息（無論成功失敗都執行）
+      - name: 顯示執行結果
+        if: always()
+        run: |
+          echo "======================================"
+          echo "執行完成 (Run #${{ github.run_number }})"
+          echo "請檢查倉庫的 commit 歷史，確認 huozhong_vless_vmess_links.txt 是否更新"
+          echo "如果 push 失敗，請查看上面的 log"
+          echo "======================================"
