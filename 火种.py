@@ -14,12 +14,22 @@ from typing import List, Dict, Optional
 BASE_URL = "https://server6.huozhong.xyz/api/nodesystem/user"
 AUTH_URL = "https://server9.huozhong.xyz/realms/vpn_application/protocol/openid-connect/token"
 
+# 从环境变量读取（GitHub Actions / 其他平台推荐方式）
 USERNAME = os.getenv("HUOZHONG_USERNAME")
 PASSWORD = os.getenv("HUOZHONG_PASSWORD")
 CLIENT_ID = os.getenv("HUOZHONG_CLIENT_ID", "vpn-user")
 CLIENT_SECRET = os.getenv("HUOZHONG_CLIENT_SECRET")
 
-# 输出文件
+# 如果缺少关键环境变量，直接退出并提示
+if not all([USERNAME, PASSWORD, CLIENT_SECRET]):
+    print("错误：缺少必要的环境变量")
+    print("请设置以下环境变量：")
+    print("  HUOZHONG_USERNAME")
+    print("  HUOZHONG_PASSWORD")
+    print("  HUOZHONG_CLIENT_SECRET")
+    exit(1)
+
+# 输出文件（在 GitHub Actions 中会 commit 回仓库）
 OUTPUT_FILE = "huozhong_vless_vmess_links.txt"
 
 
@@ -205,20 +215,21 @@ def save_link_only(link: str):
 
 
 def main():
-    # 清空文件
+    print("火种VPN - 自动提取 vless / vmess 链接")
+    print(f"输出文件: {OUTPUT_FILE}")
+    print(f"当前时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    
+    # 清空旧文件
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         pass
     
-    print("火种VPN - 自动登录 + 提取 vless / vmess 链接")
-    print(f"输出文件: {OUTPUT_FILE} （纯链接格式）\n")
-    
-    # 步骤1: 尝试登录获取新 Token
+    # 步骤1: 登录获取 Token
     token = login_and_get_token()
     if not token:
-        print("登录失败，无法继续。请检查用户名/密码，或手动抓包新 Token")
-        print("建议：立即在 App 修改密码！")
+        print("登录失败，无法继续。请检查环境变量中的用户名/密码是否正确")
         return
     
+    # 步骤2: 获取节点列表
     nodes = get_node_list(token)
     if not nodes:
         print("没有获取到任何节点，结束")
@@ -240,6 +251,7 @@ def main():
         protocol = config.get("protocol", "").lower()
         
         if protocol not in ["vless", "vmess"]:
+            print(f"  跳过不支持的协议: {protocol} (node {node_id})")
             continue
         
         try:
@@ -251,17 +263,18 @@ def main():
             save_link_only(link)
             success_count += 1
             
-            print(f"已保存 {protocol.upper()} 节点 {node_id} ({node_name}) → {link[:60]}...")
+            print(f"已保存 {protocol.upper()} 节点 {node_id} ({node_name})")
+            # 打印前60个字符便于日志查看
+            print(f"  {link[:80]}{'...' if len(link) > 80 else ''}")
         
         except Exception as e:
             print(f"生成 {protocol} 链接失败 (node {node_id}): {str(e)}")
     
     print(f"\n完成！共保存 {success_count} 条 vless/vmess 链接")
-    print(f"文件路径: {OUTPUT_FILE}")
-    print("\n重要安全提醒：")
-    print("1. 账号密码已硬编码在脚本中，非常危险！")
-    print("2. 请立即在火种 App 修改密码，并退出所有设备登录")
-    print("3. 用完后删除脚本中的 USERNAME / PASSWORD / CLIENT_SECRET")
+    print(f"文件已写入: {OUTPUT_FILE}")
+    if success_count == 0:
+        print("警告：没有成功生成任何链接，请检查账号状态或网络")
+    print("\n安全提醒：请立即修改火种VPN密码！")
 
 
 if __name__ == "__main__":
