@@ -2,21 +2,26 @@ name: 火種 VPN 連結提取器
 
 on:
   schedule:
-    - cron: '0 */6 * * *'          # 每 6 小時執行一次（可改成 '0 0 * * *' 每天 UTC 00:00）
-  workflow_dispatch:               # 允許你手動在 GitHub 點「Run workflow」觸發
+    - cron: '0 */6 * * *'          # 每 6 小時一次，可改
+  workflow_dispatch:               # 手動觸發
+
+permissions:
+  contents: write                  # 必須！允許寫入倉庫（commit/push）
 
 jobs:
   extract-links:
-    runs-on: ubuntu-latest         # 使用最新的 Ubuntu 環境
+    runs-on: ubuntu-latest
 
     steps:
     - name: 拉取程式碼
       uses: actions/checkout@v4
+      with:
+        persist-credentials: false   # 重要！避免 GITHUB_TOKEN 限制導致後續 push 失效或無限迴圈
 
     - name: 設定 Python 環境
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'     # 或 '3.11'、'3.x' 都可以
+        python-version: '3.12'
 
     - name: 安裝依賴套件
       run: |
@@ -29,8 +34,18 @@ jobs:
         HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
         HUOZHONG_CLIENT_ID:    ${{ secrets.HUOZHONG_CLIENT_ID }}
         HUOZHONG_CLIENT_SECRET: ${{ secrets.HUOZHONG_CLIENT_SECRET }}
-      run: python 火种.py
+      run: python extract_links.py
 
-    - name: 顯示執行結果（連結會出現在 log 裡）
-      if: always()                 # 無論成功失敗都顯示
-      run: echo "請查看上面的 log 輸出連結，或檢查是否有錯誤"
+    - name: 自動 commit & push 生成的連結檔案
+      uses: stefanzweifel/git-auto-commit-action@v5   # 或 v7 如果你想用最新版
+      with:
+        commit_message: "自動更新: 火種 VPN vless/vmess 連結 (${{ github.run_number }})"
+        file_pattern: huozhong_vless_vmess_links.txt   # 只 commit 這個檔案（或用 * 全部）
+        branch: ${{ github.head_ref || github.ref_name }}  # 推回當前分支（schedule 時是 main/master）
+        skip_dirty_check: false                        # 只在有變化時才 commit
+        skip_fetch: true                               # 加速
+        push_options: '--force-with-lease'             # 可選，安全一點的 force push
+
+    - name: 顯示 log 提醒（可選）
+      if: always()
+      run: echo "如果有新連結，已自動 commit 到倉庫。檢查 commit 歷史。"
