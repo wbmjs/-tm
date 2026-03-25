@@ -1,16 +1,16 @@
-name: 火种
+name: 火种 VPN 链接提取器
 
-# 觸發條件
+# 触发条件
 on:
   schedule:
-    - cron: '0 */6 * * *'          # 每 6 小時執行一次（UTC 時間，香港 +8 小時）
-  workflow_dispatch:               # 允許手動在 GitHub 介面點擊執行
+    - cron: '0 */6 * * *'          # 每 6 小时执行一次（UTC 时间，香港 +8 小时）
+  workflow_dispatch:               # 允许手动在 GitHub 界面点击执行
 
-# 必要權限：允許寫入倉庫內容（commit / push）
+# 必要权限：允许写入仓库内容（commit / push）
 permissions:
   contents: write
 
-# 提前啟用 Node.js 24 環境（可選，建議用於測試）
+# 提前启用 Node.js 24 环境（可选，建议用于测试）
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -18,27 +18,27 @@ jobs:
   extract-links:
     runs-on: ubuntu-latest
     steps:
-      # 步驟 1：拉取倉庫程式碼（更新為 @v6，支援 Node.js 24）
-      - name: 拉取程式碼
+      # 步骤 1：拉取仓库代码（更新为 @v6，支持 Node.js 24）
+      - name: 拉取代码
         uses: actions/checkout@v6
-        # 注意：這裡不要加 persist-credentials: false，否則 push 會失敗
+        # 注意：这里不要加 persist-credentials: false，否则 push 会失败
 
-      # 步驟 2：設定 Python 環境（更新為 @v6，支援 Node.js 24）
-      - name: 設定 Python
+      # 步骤 2：设置 Python 环境（更新为 @v6，支持 Node.js 24）
+      - name: 设置 Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
-      # 步驟 3：安裝依賴套件
-      - name: 安裝依賴
+      # 步骤 3：安装依赖套件
+      - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
 
-      # 步驟 4：執行你的 Python 腳本
-      - name: 執行連結提取腳本
+      # 步骤 4：执行你的 Python 脚本
+      - name: 执行链接提取脚本
         env:
           HUOZHONG_USERNAME:     ${{ secrets.HUOZHONG_USERNAME }}
           HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
@@ -46,56 +46,26 @@ jobs:
           HUOZHONG_CLIENT_SECRET: ${{ secrets.HUOZHONG_CLIENT_SECRET }}
         run: python 火种.py
 
-      # 步驟 5：自動 commit & push 生成的 txt 檔案（更新為 @v7，支援 Node.js 24）
-      - name: 自動 commit & push 連結檔案
+      # 步骤 5：自动 commit & push 生成的 txt 文件（更新为 @v7，支持 Node.js 24）
+      - name: 自动 commit & push 链接文件
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: "自動更新：火種 VPN vless/vmess 連結 (Run #${{ github.run_number }})"
+          commit_message: "自动更新：火种 VPN vless/vmess 链接 (Run #${{ github.run_number }})"
           file_pattern: huozhong_vless_vmess_links.txt
           branch: main
           commit_user_name: github-actions[bot]
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
-          skip_dirty_check: false          # 只在有變更時才 commit
-          skip_fetch: true                 # 加速執行
-          # 如果你真的需要 force push，可以加上下面這行（通常不需要）
+          skip_dirty_check: false          # 只在有变更时才 commit
+          skip_fetch: true                 # 加速执行
+          # 如果你真的需要 force push，可以加上下面这行（通常不需要）
           # push_options: '--force-with-lease'
 
-      # 步驟 6：顯示完成訊息（無論成功失敗都執行）
-      - name: 顯示執行結果
+      # 步骤 6：显示完成消息（无论成功失败都执行）
+      - name: 显示执行结果
         if: always()
         run: |
           echo "======================================"
-          echo "執行完成 (Run #${{ github.run_number }})"
-          echo "請檢查倉庫的 commit 歷史，確認 huozhong_vless_vmess_links.txt 是否更新"
-          echo "如果 push 失敗，請查看上面的 log"
-          echo "======================================"      - name: 執行連結提取腳本
-        env:
-          HUOZHONG_USERNAME:     ${{ secrets.HUOZHONG_USERNAME }}
-          HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
-          HUOZHONG_CLIENT_ID:    ${{ secrets.HUOZHONG_CLIENT_ID }}
-          HUOZHONG_CLIENT_SECRET: ${{ secrets.HUOZHONG_CLIENT_SECRET }}
-        run: python 火种.py
-
-      # 步驟 5：自動 commit & push 生成的 txt 檔案
-      - name: 自動 commit & push 連結檔案
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "自動更新：火種 VPN vless/vmess 連結 (Run #${{ github.run_number }})"
-          file_pattern: huozhong_vless_vmess_links.txt
-          branch: main
-          commit_user_name: github-actions[bot]
-          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
-          skip_dirty_check: false          # 只在有變更時才 commit
-          skip_fetch: true                 # 加速執行
-          # 如果你真的需要 force push，可以加上下面這行（通常不需要）
-          # push_options: '--force-with-lease'
-
-      # 步驟 6：顯示完成訊息（無論成功失敗都執行）
-      - name: 顯示執行結果
-        if: always()
-        run: |
-          echo "======================================"
-          echo "執行完成 (Run #${{ github.run_number }})"
-          echo "請檢查倉庫的 commit 歷史，確認 huozhong_vless_vmess_links.txt 是否更新"
-          echo "如果 push 失敗，請查看上面的 log"
+          echo "执行完成 (Run #${{ github.run_number }})"
+          echo "请检查仓库的 commit 历史，确认 huozhong_vless_vmess_links.txt 是否更新"
+          echo "如果 push 失败，请查看上面的 log"
           echo "======================================"
