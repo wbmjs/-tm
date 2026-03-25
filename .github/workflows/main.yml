@@ -3,7 +3,7 @@ name: 火种 VPN 链接提取器
 # 触发条件
 on:
   schedule:
-    - cron: '0 */6 * * *'          # 每 6 小时执行一次（UTC 时间，香港 +8 小时）
+    - cron: '0 */3 * * *'          # 每 6 小时执行一次（UTC 时间，香港 +8 小时）
   workflow_dispatch:               # 允许手动在 GitHub 界面点击执行
 
 # 必要权限：允许写入仓库内容（commit / push）
