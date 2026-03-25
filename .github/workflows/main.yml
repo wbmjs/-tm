@@ -1,4 +1,4 @@
-name: 火種 VPN 連結提取器
+name: 火种
 
 # 觸發條件
 on:
@@ -10,18 +10,22 @@ on:
 permissions:
   contents: write
 
+# 提前啟用 Node.js 24 環境（可選，建議用於測試）
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   extract-links:
     runs-on: ubuntu-latest
     steps:
-      # 步驟 1：拉取倉庫程式碼
+      # 步驟 1：拉取倉庫程式碼（更新為 @v6，支援 Node.js 24）
       - name: 拉取程式碼
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         # 注意：這裡不要加 persist-credentials: false，否則 push 會失敗
 
-      # 步驟 2：設定 Python 環境
+      # 步驟 2：設定 Python 環境（更新為 @v6，支援 Node.js 24）
       - name: 設定 Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -35,6 +39,36 @@ jobs:
 
       # 步驟 4：執行你的 Python 腳本
       - name: 執行連結提取腳本
+        env:
+          HUOZHONG_USERNAME:     ${{ secrets.HUOZHONG_USERNAME }}
+          HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
+          HUOZHONG_CLIENT_ID:    ${{ secrets.HUOZHONG_CLIENT_ID }}
+          HUOZHONG_CLIENT_SECRET: ${{ secrets.HUOZHONG_CLIENT_SECRET }}
+        run: python 火种.py
+
+      # 步驟 5：自動 commit & push 生成的 txt 檔案（更新為 @v7，支援 Node.js 24）
+      - name: 自動 commit & push 連結檔案
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "自動更新：火種 VPN vless/vmess 連結 (Run #${{ github.run_number }})"
+          file_pattern: huozhong_vless_vmess_links.txt
+          branch: main
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          skip_dirty_check: false          # 只在有變更時才 commit
+          skip_fetch: true                 # 加速執行
+          # 如果你真的需要 force push，可以加上下面這行（通常不需要）
+          # push_options: '--force-with-lease'
+
+      # 步驟 6：顯示完成訊息（無論成功失敗都執行）
+      - name: 顯示執行結果
+        if: always()
+        run: |
+          echo "======================================"
+          echo "執行完成 (Run #${{ github.run_number }})"
+          echo "請檢查倉庫的 commit 歷史，確認 huozhong_vless_vmess_links.txt 是否更新"
+          echo "如果 push 失敗，請查看上面的 log"
+          echo "======================================"      - name: 執行連結提取腳本
         env:
           HUOZHONG_USERNAME:     ${{ secrets.HUOZHONG_USERNAME }}
           HUOZHONG_PASSWORD:     ${{ secrets.HUOZHONG_PASSWORD }}
